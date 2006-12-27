@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+
+Copyright 2001-2006 The Apache Software Foundation
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not
+use this file except in compliance with the License. You may obtain a copy of
+the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+License for the specific language governing permissions and limitations
+under the License.
+-->
+
+<simple-methods xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+        xsi:noNamespaceSchemaLocation="http://www.ofbiz.org/dtds/simple-methods.xsd">
+    <simple-method method-name="createRequirement" short-description="Create a new requirement">
+        <make-value value-name="newEntity" entity-name="Requirement"/>
+        <sequenced-id-to-env sequence-name="Requirement" env-name="requirementId"/>
+        <to-string field-name="requirementId"/>
+        <set from-field="requirementId" field="newEntity.requirementId"/>
+        <set-nonpk-fields map-name="parameters" value-name="newEntity"/>
+        <if-empty field-name="statusId" map-name="parameters">
+            <set value="REQ_CREATED" field="newEntity.statusId"/>
+        </if-empty>
+        <now-timestamp-to-env env-name="nowTimestamp"/>
+        <set from-field="nowTimestamp" field="newEntity.createdDate"/>
+        <create-value value-name="newEntity"/>
+        <field-to-result field-name="requirementId" result-name="requirementId"/>
+    </simple-method>
+
+    <simple-method method-name="updateRequirement" short-description="Update a requirement">
+        <make-value value-name="lookupPKMap" entity-name="Requirement"/>
+        <set-pk-fields map-name="parameters" value-name="lookupPKMap"/>
+        <find-by-primary-key entity-name="Requirement" map-name="lookupPKMap" value-name="lookedUpValue"/>
+        <clone-value value-name="lookedUpValue" new-value-name="savedValue"/>
+        <field-to-result field-name="lookedUpValue.statusId" result-name="oldStatusId"/>
+        <set-nonpk-fields map-name="parameters" value-name="lookedUpValue"/> 
+        <store-value value-name="lookedUpValue"/>
+    </simple-method>
+
+    <simple-method method-name="deleteRequirement" short-description="Delete a requirement">
+        <entity-one entity-name="Requirement" value-name="requirement" auto-field-map="true"/>
+        <check-errors/>
+        <remove-related value-name="requirement" relation-name="RequirementCustRequest"/>
+        <remove-value value-name="requirement"/>
+    </simple-method>
+
+    <simple-method method-name="associateRequirementWithRequestItem" short-description="Associate a requirement and CustRequestItem">
+        <make-value value-name="newEntity" entity-name="RequirementCustRequest"/>
+        <set-pk-fields map-name="parameters" value-name="newEntity"/>
+        <set-nonpk-fields map-name="parameters" value-name="newEntity"/>
+        <create-value value-name="newEntity"/>
+    </simple-method>
+	
+    <simple-method method-name="addTaskToRequirement" short-description="Add a task to a requirement">
+        <make-value value-name="newEntity" entity-name="WorkRequirementFulfillment"/>
+        <set-pk-fields map-name="parameters" value-name="newEntity"/>
+        <create-value value-name="newEntity"/>
+    </simple-method>
+    
+    <simple-method method-name="getRequirementsForSupplier" short-description="Get the requirements applicable to a given supplier">
+        <make-value value-name="newEntity" entity-name="Requirement"/>
+        <if-not-empty field-name="parameters.partyId">
+            <!-- all the product requirements that are assigned to the given supplier are shown -->
+            <entity-condition entity-name="RequirementAndRole" list-name="requirementsForSupplier">
+                <condition-list>
+                    <condition-object field-name="parameters.requirementConditions"/>
+                    <condition-expr field-name="statusId" value="REQ_APPROVED"/>
+                    <condition-expr field-name="roleTypeId" value="SUPPLIER"/>
+                    <condition-expr field-name="requirementTypeId" value="PRODUCT_REQUIREMENT"/>
+                    <condition-expr field-name="partyId" env-name="parameters.partyId"/>
+                </condition-list>
+            </entity-condition>
+        <else>
+            <if-not-empty field-name="parameters.unassignedRequirements">
+                <!-- only the product requirements that are not assigned to a supplier are shown -->
+                <entity-condition entity-name="RequirementAndRole" list-name="requirementsForSupplier">
+                    <condition-list>
+                        <condition-object field-name="parameters.requirementConditions"/>
+                        <condition-expr field-name="statusId" value="REQ_APPROVED"/>
+                        <condition-expr field-name="requirementTypeId" value="PRODUCT_REQUIREMENT"/>
+                        <condition-expr field-name="partyId" env-name="null"/>
+                    </condition-list>
+                </entity-condition>
+            <else>
+                <!-- all the product requirements that are assigned to suppliers are shown -->
+                <entity-condition entity-name="RequirementAndRole" list-name="requirementsForSupplier">
+                    <condition-list>
+                        <condition-object field-name="parameters.requirementConditions"/>
+                        <condition-expr field-name="statusId" value="REQ_APPROVED"/>
+                        <condition-expr field-name="requirementTypeId" value="PRODUCT_REQUIREMENT"/>
+                        <condition-expr field-name="roleTypeId" value="SUPPLIER"/>
+                    </condition-list>
+                    <order-by field-name="partyId"/>
+                </entity-condition>
+            </else>
+            </if-not-empty>
+        </else>
+        </if-not-empty>
+        <if-not-empty field-name="parameters.assignedRequirements">
+        <else>
+        </else>
+        </if-not-empty>
+        <field-to-result field-name="requirementsForSupplier" result-name="requirementsForSupplier"/>
+    </simple-method>
+
+    <simple-method method-name="autoAssignRequirementToSupplier" short-description="If the requirement is a product requirement (purchasing) try to assign it to the primary supplier">
+        <entity-one entity-name="Requirement" value-name="requirement" auto-field-map="true"/>
+        <check-errors/>
+        <if-compare field-name="requirement.requirementTypeId" operator="equals" value="PRODUCT_REQUIREMENT">
+            <if-not-empty field-name="requirement.productId">
+                <entity-condition entity-name="SupplierProduct" list-name="supplierProducts">
+                    <condition-list>
+                        <condition-expr field-name="productId" env-name="requirement.productId"/>
+                        <!-- TODO: compare quantity in requirement to the quantity in the SupplierProduct entity -->
+                        <!--<condition-expr field-name="supplierPrefOrderId" value="PRODUCT_REQUIREMENT"/>-->
+                    </condition-list>
+                    <order-by field-name="supplierPrefOrderId"/>
+                </entity-condition>
+                <filter-list-by-date list-name="supplierProducts" from-field-name="availableFromDate" thru-field-name="availableThruDate"/>
+                <first-from-list list-name="supplierProducts" entry-name="supplierProduct"/>
+                <if-not-empty field-name="supplierProduct.partyId">
+                    <make-value value-name="requirementSupplier" entity-name="RequirementRole"/>
+                    <set field="requirementSupplier.requirementId" from-field="requirement.requirementId"/>
+                    <set field="requirementSupplier.partyId" from-field="supplierProduct.partyId"/>
+                    <set field="requirementSupplier.roleTypeId" value="SUPPLIER"/>
+                    <now-timestamp-to-env env-name="requirementSupplier.fromDate"/>
+                    <create-value value-name="requirementSupplier"/>
+                </if-not-empty>
+            </if-not-empty>
+        </if-compare>
+    </simple-method>
+    
+    <!-- create a new RequirementRole -->
+    <simple-method method-name="createRequirementRole" short-description="Create a RequirementRole">
+        <check-permission permission="ORDERMGR" action="_CREATE">
+            <fail-message message="Security Error: to run createRequirementRole you must have the ORDERMGR_CREATE or ORDERMGR_ADMIN permission"/>
+        </check-permission>
+        <check-errors/>
+        <set from-field="parameters.partyId" field="lookupPKMap.partyId"/>
+        <set from-field="parameters.roleTypeId" field="lookupPKMap.roleTypeId"/>
+        <find-by-primary-key entity-name="PartyRole" map-name="lookupPKMap" value-name="partyRole"/>
+        <if-empty map-name="partyRole" field-name="partyId">
+            <make-value value-name="partyRole" entity-name="PartyRole"/>
+            <set-pk-fields map-name="lookupPKMap" value-name="partyRole"/>
+            <create-value value-name="partyRole"/>
+        </if-empty>
+        <!-- create new entity and create all the fields -->
+        <make-value value-name="newEntity" entity-name="RequirementRole"/>
+        <set-pk-fields map-name="parameters" value-name="newEntity"/>
+        <set-nonpk-fields map-name="parameters" value-name="newEntity"/>
+        <if-empty field-name="newEntity.fromDate">
+            <now-timestamp-to-env env-name="newEntity.fromDate"/>
+        </if-empty>
+        <create-value value-name="newEntity"/>
+        <check-errors/>
+    </simple-method>
+
+    <!-- update an existing RequirementRole -->
+    <simple-method method-name="updateRequirementRole" short-description="Update an existing RequirementRole">
+        <check-permission permission="ORDERMGR" action="_CREATE">
+            <fail-message message="Security Error: to run updateRequirementRole you must have the ORDERMGR_CREATE or ORDERMGR_ADMIN permission"/>
+        </check-permission>
+        <check-errors/>
+        <entity-one entity-name="RequirementRole" value-name="requirementRole" auto-field-map="true"/>
+        <check-errors/>
+        <set-nonpk-fields map-name="parameters" value-name="requirementRole"/>
+        <store-value value-name="requirementRole"/>
+        <check-errors/>
+    </simple-method>
+
+    <!-- remove an existing RequirementRole -->
+    <simple-method method-name="removeRequirementRole" short-description="Remove an existing RequirementRole">
+        <check-permission permission="ORDERMGR" action="_CREATE">
+            <fail-message message="Security Error: to run removeRequirementRole you must have the ORDERMGR_CREATE or ORDERMGR_ADMIN permission"/>
+        </check-permission>
+        <check-errors/>
+        <entity-one entity-name="RequirementRole" value-name="requirementRole" auto-field-map="true"/>
+        <check-errors/>
+        <remove-value value-name="requirementRole"/>
+        <check-errors/>
+    </simple-method>
+
+</simple-methods>
