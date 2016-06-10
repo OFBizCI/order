@@ -22,9 +22,9 @@ under the License.
         xsi:noNamespaceSchemaLocation="http://www.ofbiz.org/dtds/simple-methods.xsd">
 
     <simple-method method-name="createUpdateCustomerAndShippingAddress" short-description="Create/Update Customer, Shipping Address and other contact details." login-required="false">
-        <call-map-processor xml-resource="component://order/script/org/ofbiz/order/customer/CheckoutMapProcs.xml"
+        <call-map-processor xml-resource="component://order/minilang/customer/CheckoutMapProcs.xml"
                 processor-name="shipToPhone" in-map-name="parameters" out-map-name="shipToPhoneCtx"/>
-        <call-map-processor xml-resource="component://party/script/org/ofbiz/party/contact/PartyContactMechMapProcs.xml"
+        <call-map-processor xml-resource="component://party/minilang/contact/PartyContactMechMapProcs.xml"
                 processor-name="emailAddress" in-map-name="parameters" out-map-name="emailAddressCtx"/>
         <check-errors/>
         <set field="shoppingCart" from-field="parameters.shoppingCart"/>
@@ -114,7 +114,7 @@ under the License.
     </simple-method>
 
     <simple-method method-name="createUpdateBillingAddressAndPaymentMethod" short-description="Create/update billing address and payment information" login-required="false">
-        <call-map-processor xml-resource="component://order/script/org/ofbiz/order/customer/CheckoutMapProcs.xml"
+        <call-map-processor xml-resource="component://order/minilang/customer/CheckoutMapProcs.xml"
                 processor-name="billToPhone" in-map-name="parameters" out-map-name="billToPhoneContext"/>
         <check-errors/>
         <set field="shoppingCart" from-field="parameters.shoppingCart"/>

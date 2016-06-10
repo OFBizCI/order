@@ -25,7 +25,7 @@ under the License.
         <set field="primaryPermission" value="ORDERMGR"/>
         <set field="altPermission" value="ORDERMGR_ROLE"/>
         <set field="mainAction" from-field="parameters.mainAction"/>
-        <call-simple-method method-name="genericBasePermissionCheck" xml-resource="component://common/script/org/ofbiz/common/permission/CommonPermissionServices.xml"/>
+        <call-simple-method method-name="genericBasePermissionCheck" xml-resource="component://common/minilang/permission/CommonPermissionServices.xml"/>
         <if-compare field="hasPermission" operator="not-equals" value="true">
             <set field="resourceDescription" from-field="parameters.resourceDescription"/>
             <if-empty field="resourceDescription">

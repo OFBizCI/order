@@ -30,7 +30,7 @@ under the License.
             </condition>
             <then>
                 <set field="primaryPermission" value="ORDERMGR_CRQ"/>
-                <call-simple-method method-name="genericBasePermissionCheck" xml-resource="component://common/script/org/ofbiz/common/permission/CommonPermissionServices.xml"/>
+                <call-simple-method method-name="genericBasePermissionCheck" xml-resource="component://common/minilang/permission/CommonPermissionServices.xml"/>
                 <if-compare field="hasPermission" operator="not-equals" value="true">
                     <set field="resourceDescription" from-field="parameters.resourceDescription"/>
                     <if-empty field="resourceDescription">
@@ -138,7 +138,7 @@ under the License.
                             <entity-one entity-name="WorkEffort" value-field="lowInfo">
                                 <field-map field-name="workEffortId" from-field="workEffort.workEffortId"/>
                             </entity-one>
-                            <call-simple-method method-name="getHours" xml-resource="component://workeffort/script/org/ofbiz/workeffort/workeffort/WorkEffortSimpleServices.xml"/>
+                            <call-simple-method method-name="getHours" xml-resource="component://workeffort/minilang/workeffort/WorkEffortSimpleServices.xml"/>
                             <set field="actualHours" from-field="highInfo.actualHours"/>
                             <!-- no hours recorded yet so custrequest can be cancelled -->
                             <if-empty field="actualHours">
